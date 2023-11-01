@@ -240,16 +240,14 @@ impl GCodeFile {
                         } => {
                             if !tool_is_ready_to_cut {
                                 let target_depth = pass_depth.map_or(cut_depth, |pass_depth| {
-                                    travel_height - pass_depth * *pass_index as f64
+                                     -pass_depth * (*pass_index + 1) as f64
                                 });
+
+				let surface = 0.0 as f64;
 
                                 writeln!(
                                     &mut output,
-                                    "G1 Z{} F{}",
-                                    match unit_mode {
-                                        UnitMode::Metric => target_depth.get::<millimeter>(),
-                                        UnitMode::Imperial => target_depth.get::<mil>(),
-                                    },
+                                    "G0 Z0 F{}",
                                     match unit_mode {
                                         UnitMode::Metric =>
                                             plunge_speed.get::<millimeter_per_second>(),
@@ -263,6 +261,14 @@ impl GCodeFile {
                                         UnitMode::Metric =>
                                             work_speed.get::<millimeter_per_second>(),
                                         UnitMode::Imperial => work_speed.get::<inch_per_second>(),
+                                    }
+                                )?;
+				writeln!(
+                                    &mut output,
+                                    "G1 Z{}",
+                                    match unit_mode {
+                                        UnitMode::Metric => target_depth.get::<millimeter>(),
+                                        UnitMode::Imperial => target_depth.get::<mil>(),
                                     }
                                 )?;
                                 tool_is_ready_to_cut = true;

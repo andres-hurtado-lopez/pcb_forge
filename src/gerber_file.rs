@@ -169,9 +169,10 @@ impl GerberFile {
 
                     // The number of passes we are to do.
                     // This will have a tendency to undercut but that should be fine for most use cases.
-                    pass_depth.map_or(1, |pass_depth| {
-                        ((travel_height - cut_depth) / pass_depth).get::<ratio>() as usize
-                    })
+                    let o = pass_depth.map_or(1, |pass_depth| {
+                        (cut_depth.abs() / pass_depth).get::<ratio>() as usize
+                    });
+		    o
                 } else {
                     bail!("Job was configured for a spindle but selected tool is not a spindle.");
                 }
@@ -597,9 +598,16 @@ impl Format {
 
         // Get integer part.
         let integer = &coordinate[..coordinate
-            .len()
-            .saturating_sub(self.decimal_digits as usize)];
-        let integer = if !integer.is_empty() {
+				  .len()
+				  .saturating_sub(self.decimal_digits as usize)];
+
+	let dec_sign = if integer == "-" {
+	    true
+	} else {
+	    false
+	};
+	
+        let integer = if !integer.is_empty() && integer != "-" {
             integer
                 .parse::<i32>()
                 .context("internal integer parsing error")?
@@ -607,7 +615,7 @@ impl Format {
             0
         };
 
-        let sign = integer.signum();
+        let sign = if dec_sign == true { -1 } else { integer.signum() };
         let integer = integer.abs();
 
         // Combine.
